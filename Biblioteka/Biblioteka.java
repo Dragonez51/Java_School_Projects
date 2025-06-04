@@ -24,17 +24,26 @@ public class Biblioteka {
     private JButton rent_return;
     private JButton delete;
     private JTextField SearchBar;
+    private JLabel Label1;
+    private JLabel Label2;
+    private JLabel Label3;
 
-    private ArrayList<Ksiazka> lista;
+    private ArrayList<Ksiazka> ksiazki;
+    private ArrayList<Czytelnik> czytelnicy;
+
+    private int currentModel; // 0 - ksiazki | 1 - czytelnicy
 
     public Biblioteka(){
 
 //      ||=================================Tabela=================================||
-        lista = new ArrayList<Ksiazka>();
+        ksiazki = new ArrayList<>();
+        czytelnicy = new ArrayList<>();
 
-        DefaultTableModel model = new DefaultTableModel(new Object[]{"Tytuł", "Autor", "Rok", "Status"}, 0);
+        DefaultTableModel modelKsiazek = new DefaultTableModel(new Object[]{"ID", "Tytuł", "Autor", "Rok", "Status"}, 0);
+        DefaultTableModel modelCzytelnikow = new DefaultTableModel(new Object[]{"ID", "Imie Nazwisko", "Wiek", "Wypożyczone książki"}, 0);
 
-        table1.setModel(model);
+        table1.setModel(modelKsiazek);
+        currentModel = 0;
 
 //      ||=================================Menu=================================||
         JMenuBar menuBar = new JMenuBar();
@@ -46,10 +55,15 @@ public class Biblioteka {
                 JFileChooser fc = new JFileChooser();
                 fc.setFileFilter(new FileNameExtensionFilter("pliki CSV (.csv)", "csv"));
                 fc.showOpenDialog(frame);
-                lista = wczytajZPliku(fc.getSelectedFile());
-                DefaultTableModel model = (DefaultTableModel) table1.getModel();
-                for(int i=0; i<lista.size(); i++){
-                    model.addRow(new Object[]{lista.get(i).tytul, lista.get(i).autor, lista.get(i).rok, lista.get(i).status ? "dostępny" : "wypożyczony"});
+                if(wczytajZPliku(fc.getSelectedFile())){
+                    Label1.setText("Tytuł:");
+                    Label2.setText("Autor:");
+                    Label3.setText("Rok:");
+                    table1.setModel(modelKsiazek);
+                    DefaultTableModel model = (DefaultTableModel) table1.getModel();
+                    for(int i=0; i<ksiazki.size(); i++){
+                        model.addRow(new Object[]{ksiazki.get(i).id, ksiazki.get(i).tytul, ksiazki.get(i).autor, ksiazki.get(i).rok, ksiazki.get(i).status ? "dostępny" : "wypożyczony"});
+                    }
                 }
             }
         });
@@ -78,18 +92,86 @@ public class Biblioteka {
         menu.add(menuItem);
 
         menuBar.add(menu);
-        frame.setJMenuBar(menuBar);
 
+//      ------------------------------------Menu 2--------------------------------------------
+
+        JMenu menu2 = new JMenu("Zakładki");
+        menuItem = new JMenuItem("Książki");
+        menuItem.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                clearTable(table1);
+                
+                Label1.setText("Tytuł:");
+                Label2.setText("Autor:");
+                Label3.setText("Rok:");
+                
+                table1.setModel(modelKsiazek);
+                currentModel = 0;
+
+                for(int i=0; i<ksiazki.size(); i++){
+                    Ksiazka kTemp = ksiazki.get(i);
+                    modelKsiazek.addRow(new Object[]{kTemp.id, kTemp.tytul, kTemp.autor, kTemp.rok, kTemp.status ? "dostępna":"wypożyczona"});
+                }
+            }
+        });
+        menu2.add(menuItem);
+
+        menuItem = new JMenuItem("Czytelnicy");
+        menuItem.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                clearTable(table1);
+
+                Label1.setText("Imie:");
+                Label2.setText("Nazwisko:");
+                Label3.setText("Wiek:");
+
+                table1.setModel(modelCzytelnikow);
+                currentModel = 1;
+
+                for(int i=0; i< czytelnicy.size(); i++){
+                    Czytelnik cTemp = czytelnicy.get(i);
+                    modelCzytelnikow.addRow(new Object[]{cTemp.id, cTemp.imie_nazwisko, cTemp.wiek, cTemp.wypozyczoneKsiazki.toString().substring(1, cTemp.wypozyczoneKsiazki.toString().length()-1)});
+                }
+            }
+        });
+        menu2.add(menuItem);
+
+        menuBar.add(menu2);
+
+        frame.setJMenuBar(menuBar);
 //      ||=================================Dodawanie Książek=================================||
 
         add.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 if(!Tytul.getText().isEmpty() && !Autor.getText().isEmpty() && !Rok.getText().isEmpty()){
-                    Ksiazka temp = new Ksiazka(Tytul.getText(), Autor.getText(), Rok.getText(), true);
-                    lista.add(temp);
-                    DefaultTableModel model = (DefaultTableModel) table1.getModel();
-                    model.addRow(new Object[]{Tytul.getText(), Autor.getText(), Rok.getText(), "dostępny"});
+                    switch(currentModel){
+                        case 0:
+                            int nextID = 0;
+                            if(!ksiazki.isEmpty()){
+                                nextID = ksiazki.get(ksiazki.size()-1).id+1;
+                            }
+                            Ksiazka temp = new Ksiazka(nextID, Tytul.getText(), Autor.getText(), Rok.getText(), true);
+                            ksiazki.add(temp);
+                            DefaultTableModel model = (DefaultTableModel) table1.getModel();
+                            model.addRow(new Object[]{nextID, Tytul.getText(), Autor.getText(), Rok.getText(), "dostępny"});
+                            break;
+                        case 1:
+                            nextID=0;
+                            if(!czytelnicy.isEmpty()){
+                                nextID = czytelnicy.get(czytelnicy.size()-1).id+1;
+                            }
+                            Czytelnik cTemp = new Czytelnik(nextID, Tytul.getText()+" "+Autor.getText(), Integer.parseInt(Rok.getText()));
+                            czytelnicy.add(cTemp);
+                            DefaultTableModel model2 = (DefaultTableModel) table1.getModel();
+                            model2.addRow(new Object[]{nextID, Tytul.getText()+" "+Autor.getText(), Rok.getText(), ""});
+                            break;
+                        default:
+                            new ErrorDialog("currentModel is out of bounds!");
+                            break;
+                    }
                 }else{
                     new ErrorDialog("Występują puste pola!");
                 }
@@ -100,9 +182,18 @@ public class Biblioteka {
             @Override
             public void actionPerformed(ActionEvent e) {
                 if(table1.getSelectedRow() != -1){
-                    lista.remove(table1.convertRowIndexToModel(table1.getSelectedRow()));
-                    DefaultTableModel model = (DefaultTableModel) table1.getModel();
-                    model.removeRow(table1.convertRowIndexToModel(table1.getSelectedRow()));
+                    switch(currentModel){
+                        case 0:
+                            ksiazki.remove(table1.convertRowIndexToModel(table1.getSelectedRow()));
+                            DefaultTableModel model = (DefaultTableModel) table1.getModel();
+                            model.removeRow(table1.convertRowIndexToModel(table1.getSelectedRow()));
+                            break;
+                        case 1:
+                            czytelnicy.remove(table1.convertRowIndexToModel(table1.getSelectedRow()));
+                            DefaultTableModel model2 = (DefaultTableModel) table1.getModel();
+                            model2.removeRow(table1.convertRowIndexToModel(table1.getSelectedRow()));
+                            break;
+                    }
                 }else{
                     new ErrorDialog("Nie wybrano rekordu!");
                 }
@@ -113,10 +204,9 @@ public class Biblioteka {
             @Override
             public void actionPerformed(ActionEvent e) {
                 if(table1.getSelectedRow() != -1){
-                    lista.get(table1.convertRowIndexToModel(table1.getSelectedRow())).changeStatus();
+                    ksiazki.get(table1.convertRowIndexToModel(table1.getSelectedRow())).changeStatus();
                     DefaultTableModel model = (DefaultTableModel) table1.getModel();
-                    model.setValueAt(lista.get(table1.convertRowIndexToModel(table1.getSelectedRow())).status ? "dostępna" : "wypożyczona", table1.convertRowIndexToModel(table1.getSelectedRow()), 3);
-//                    table1.getRowSorter()
+                    model.setValueAt(ksiazki.get(table1.convertRowIndexToModel(table1.getSelectedRow())).status ? "dostępna" : "wypożyczona", table1.convertRowIndexToModel(table1.getSelectedRow()), 4);
                 }else{
                     new ErrorDialog("Nie wybrano rekordu!");
                 }
@@ -139,8 +229,6 @@ public class Biblioteka {
                     regex+="&";
                 }
 
-                System.out.println(regex);
-
                 sorter.setRowFilter(RowFilter.regexFilter(regex));
 
                 table1.setRowSorter(sorter);
@@ -160,33 +248,64 @@ public class Biblioteka {
         });
     }
 
-    public ArrayList<Ksiazka> wczytajZPliku(File file){
+    private void clearTable(JTable table){
+        DefaultTableModel model = (DefaultTableModel) table.getModel();
+
+        for(int i=model.getRowCount()-1; i>=0; i--){
+            model.removeRow(i);
+        }
+    }
+
+    private boolean wczytajZPliku(File file){
         try {
-            ArrayList<Ksiazka> lista = new ArrayList<>();
-            Scanner sc = new Scanner(file);
+            Scanner sc = new Scanner(new File(file.getParent()+"/Ksiazki.csv"));
 
             while(sc.hasNextLine()){
                 String[] line = sc.nextLine().split(";");
-                if(line[3].equals("true")){
-                    lista.add(new Ksiazka(line[0], line[1], line[2], true));
+                boolean status;
+                if(line[4].equals("true")){
+                    status = true;
                 }else{
-                    lista.add(new Ksiazka(line[0], line[1], line[2], false));
+                    status = false;
                 }
+                this.ksiazki.add(new Ksiazka(Integer.parseInt(line[0]), line[1], line[2],line[3], status));
             }
-            return lista;
 
+            sc = new Scanner(new File(file.getParent()+"/Czytelnicy.csv"));
+
+            while(sc.hasNextLine()){
+                String[] line = sc.nextLine().split(";");
+
+                ArrayList<Integer> wypozyczone = new ArrayList<>();
+
+                line[3] = line[3].substring(1, line[3].length()-1);
+                if(!line[3].isBlank()){
+                    String[] tab = line[3].split(",");
+                    for(String t : tab){
+                        wypozyczone.add(Integer.parseInt(t));
+                    }
+                }
+
+                this.czytelnicy.add(new Czytelnik(Integer.parseInt(line[0]), line[1], Integer.parseInt(line[2]), wypozyczone));
+
+            }
+            return true;
         }catch(FileNotFoundException e){
             new ErrorDialog("Nie znaleziono pliku!");
+            return false;
         }
-
-        return null;
     }
 
-    public void zapiszDoPliku(File file){
+    private void zapiszDoPliku(File file){
         try{
-            PrintWriter pw = new PrintWriter(file+".csv");
-            for(int i=0; i<lista.size(); i++){
-                pw.println(lista.get(i).toString());
+            PrintWriter pw = new PrintWriter(file.getParent()+"/Ksiazki.csv");
+            for(int i=0; i<ksiazki.size(); i++){
+                pw.println(ksiazki.get(i).toString());
+            }
+            pw.close();
+            pw = new PrintWriter(file.getParent()+"/Czytelnicy.csv");
+            for(Czytelnik c : czytelnicy){
+                pw.println(c.toString());
             }
             pw.close();
 
