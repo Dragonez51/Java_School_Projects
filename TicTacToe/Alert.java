@@ -11,10 +11,10 @@ public class Alert extends JDialog {
 
     public Alert(String message) {
         Message.setText(message);
-        initialize(message.length()*30);
+        initialize(message.length()*30 + 10);
     }
 
-    private void initialize(int width){
+    private void initialize(int width) {
         setContentPane(contentPane);
         setModal(true);
         getRootPane().setDefaultButton(buttonOK);
@@ -32,7 +32,7 @@ public class Alert extends JDialog {
             }
         });
 
-        setSize(width,150);
+        setSize(width, 150);
         setLocationRelativeTo(null);
         setVisible(true);
     }
