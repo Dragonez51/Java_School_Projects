@@ -6,15 +6,6 @@ import java.util.Random;
 
 public class TicTacToe {
     private JPanel panel1;
-    private JButton button1;
-    private JButton button2;
-    private JButton button3;
-    private JButton button4;
-    private JButton button5;
-    private JButton button6;
-    private JButton button7;
-    private JButton button8;
-    private JButton button9;
 
     private JFrame frameReference;
 
@@ -26,65 +17,73 @@ public class TicTacToe {
     private boolean turn;
     private boolean win;
 
-    public TicTacToe(String gameMode){
+    private int boardSize;
+
+    private static final int  WINDOW_SIZE = 1000;
+
+    public TicTacToe(){
+//        InputHandler input = new InputHandler();
+//        System.out.println(input.getValue());
+//        new TicTacToe(input.getValue());
+        new TicTacToe(3);
+    }
+
+    private TicTacToe(int boardSize){
         turn = true;
         win = false;
         clickCounter = 0;
-        buttons = new JButton[][]{{button1, button2, button3},{button4, button5, button6},{button7, button8, button9}};
 
-        table = new int[][]{
-                {0,0,0},
-                {0,0,0},
-                {0,0,0},
-        };
-
-        initializeButtons(gameMode);
+        initializeButtons2(boardSize);
     }
 
-    private void initializeButtons(String mode){
-        String modeLowerCase = mode.toLowerCase();
-        for(int i=0; i<3; i++){
-            for(int j=0; j<3; j++){
+    private void initializeButtons2(int boardSize){
+        this.boardSize = boardSize;
+        panel1 = new JPanel();
+        panel1.setLayout(new BoxLayout(panel1, BoxLayout.PAGE_AXIS));
+        table = new int[boardSize][boardSize];
+        buttons = new JButton[boardSize][boardSize];
+
+        for(int i=0; i<boardSize; i++){
+            JPanel row = new JPanel();
+//            row.setLayout(new BoxLayout(row, BoxLayout.X_AXIS));
+            for(int j=0; j<boardSize; j++){
                 tempi = i;
                 tempj = j;
-                switch(modeLowerCase){
-                    case "multiplayer":
-                        buttons[i][j].addActionListener(new ActionListener() {
-                            int temp2i = tempi;
-                            int temp2j = tempj;
-                            @Override
-                            public void actionPerformed(ActionEvent e) {
-                                multiplayerAction(temp2i, temp2j);
-                            }
-                        });
-                        break;
-                    case "singleplayer":
-                        buttons[i][j].addActionListener(new ActionListener() {
-                            int temp2i = tempi;
-                            int temp2j = tempj;
-                            @Override
-                            public void actionPerformed(ActionEvent e) {
-                                playerAction(temp2i, temp2j);
-                                if(win){
-                                    return;
-                                }
-                                botTurn();
-                            }
-                        });
-                        break;
-                }
+//                JPanel wrapper = new JPanel();
+                JButton button = new JButton();
+                int buttonSize = WINDOW_SIZE / boardSize;
+                button.setPreferredSize(new Dimension(buttonSize - 20,buttonSize - 20));
+                button.addActionListener(new ActionListener() {
+                    int temp2i = tempi;
+                    int temp2j = tempj;
+                    @Override
+                    public void actionPerformed(ActionEvent e) {
+                        playerAction(temp2i, temp2j);
+                        if(win){
+                            return;
+                        }
+                        botTurn();
+
+                    }
+                });
+                table[i][j] = 0;
+                buttons[i][j] = button;
+//                wrapper.add(button);
+//                row.add(wrapper);
+                row.add(button);
             }
+            panel1.add(row);
         }
     }
 
-    private void multiplayerAction(int i, int j){
-        buttons[i][j].setBackground(turn ? Color.GREEN : Color.RED);
-        buttons[i][j].setEnabled(false);
-        table[i][j] = turn ? 1 : 10;
-        turn = !turn;
-        clickCounter++;
-        checkMultiplayerWinner();
-    }
+//    private void multiplayerAction(int i, int j){
+//        buttons[i][j].setBackground(turn ? Color.GREEN : Color.RED);
+//        buttons[i][j].setEnabled(false);
+//        table[i][j] = turn ? 1 : 10;
+//        turn = !turn;
+//        clickCounter++;
+//        checkMultiplayerWinner();
+//    }
 
     private void playerAction(int i, int j){
         buttons[i][j].setBackground(Color.GREEN);
@@ -105,27 +104,29 @@ public class TicTacToe {
     }
 
     private void botRandom(){
-        if(clickCounter == 2){
-            int[] indexes = botCheckFirstMove();
-            if(indexes != null){
-                botAction(indexes[0], indexes[1]);
-                return;
+        if(boardSize == 3){
+            if(clickCounter == 2){
+                int[] indexes = botCheckFirstMove();
+                if(indexes != null){
+                    botAction(indexes[0], indexes[1]);
+                    return;
+                }
             }
-        }
-        if(clickCounter == 4){
-            int[] indexes = botCheckSecondMove();
-            if(indexes != null){
-                botAction(indexes[0], indexes[1]);
-                return;
+            if(clickCounter == 4){
+                int[] indexes = botCheckSecondMove();
+                if(indexes != null){
+                    botAction(indexes[0], indexes[1]);
+                    return;
+                }
             }
         }
 
         Random rand = new Random();
-        int i = rand.nextInt(0,3);
-        int j = rand.nextInt(0,3);
+        int i = rand.nextInt(0,boardSize);
+        int j = rand.nextInt(0,boardSize);
         while(table[i][j] != 0){
-            i = rand.nextInt(0,3);
-            j = rand.nextInt(0,3);
+            i = rand.nextInt(0,boardSize);
+            j = rand.nextInt(0,boardSize);
         }
         botAction(i, j);
     }
@@ -159,30 +160,31 @@ public class TicTacToe {
     }
 
     private boolean botAttack(){
-        for(int i=0; i<3; i++) {
+        int missingOne = (boardSize*10) - 10;
+        for(int i=0; i<boardSize; i++) {
             int rowSum = 0;
             int colSum = 0;
-            for (int j = 0; j < 3; j++) {
+            for (int j = 0; j < boardSize; j++) {
                 rowSum += table[i][j];
                 colSum += table[j][i];
             }
 
-            if (rowSum == 20) {
+            if (rowSum == missingOne) {
                 botAction(i, getFreeCellIndexInRow(i));
                 return true;
             }
-            if (colSum == 20) {
-                botAction(getFreeCellIndexInCollumn(i), i);
+            if (colSum == missingOne) {
+                botAction(getFreeCellIndexInColumn(i), i);
                 return true;
             }
         }
         int[] cross = getCrossSums();
-        if(cross[0] == 20){
+        if(cross[0] == missingOne){
             int[] temp = getCrossLFreeIndex();
             botAction(temp[0], temp[1]);
             return true;
         }
-        if(cross[1] == 20){
+        if(cross[1] == missingOne){
             int[] temp = getCrossRFreeIndex();
             botAction(temp[0], temp[1]);
             return true;
@@ -192,30 +194,31 @@ public class TicTacToe {
     }
 
     private boolean botDefend(){
-        for(int i=0; i<3; i++) {
+        int missingOne = boardSize - 1;
+        for(int i=0; i<boardSize; i++) {
             int rowSum = 0;
             int colSum = 0;
-            for (int j = 0; j < 3; j++) {
+            for (int j = 0; j < boardSize; j++) {
                 rowSum += table[i][j];
                 colSum += table[j][i];
             }
 
-            if (rowSum == 2) {
+            if (rowSum == missingOne) {
                 botAction(i, getFreeCellIndexInRow(i));
                 return true;
             }
-            if (colSum == 2) {
-                botAction(getFreeCellIndexInCollumn(i), i);
+            if (colSum == missingOne) {
+                botAction(getFreeCellIndexInColumn(i), i);
                 return true;
             }
         }
         int[] cross = getCrossSums();
-        if(cross[0] == 2){
+        if(cross[0] == missingOne){
             int[] temp = getCrossLFreeIndex();
             botAction(temp[0], temp[1]);
             return true;
         }
-        if(cross[1] == 2){
+        if(cross[1] == missingOne){
             int[] temp = getCrossRFreeIndex();
             botAction(temp[0], temp[1]);
             return true;
@@ -232,13 +235,19 @@ public class TicTacToe {
     }
 
     private int[] getCrossSums(){
-        int[] temp = new int[2];
-        temp[0] = table[0][0] + table[1][1] + table[2][2];
-        temp[1] = table[0][2] + table[1][1] + table[2][0];
-        return temp;
+        int crossLSum = 0;
+        for(int i=0; i<boardSize; i++){
+            crossLSum+=table[i][i];
+        }
+        int crossRSum = 0;
+        int j=boardSize-1;
+        for(int i=0; i<boardSize; i++){
+            crossRSum+=table[i][j--];
+        }
+        return new int[]{crossLSum, crossRSum};
     }
     private int[] getCrossLFreeIndex(){
-        for(int i=0; i<3; i++){
+        for(int i=0; i<boardSize; i++){
             if(table[i][i] == 0){
                 return new int[]{i, i};
             }
@@ -247,18 +256,19 @@ public class TicTacToe {
     }
 
     private int[] getCrossRFreeIndex(){
-        for(int i=0; i<3; i++){
-            for(int j=2; j>-1; j--){
-                if(table[i][j] == 0){
-                    return new int[]{i, j};
-                }
+        int j=boardSize-1;
+        for(int i=0; i<boardSize; i++) {
+            System.out.println(j);
+            if (table[i][j] == 0) {
+                return new int[]{i, j};
             }
+            j--;
         }
         return null;
     }
 
     private int getFreeCellIndexInRow(int row){
-        for(int i=0; i<3; i++){
+        for(int i=0; i<boardSize; i++){
             if(table[row][i] == 0){
                 return i;
             }
@@ -266,9 +276,9 @@ public class TicTacToe {
         return -1;
     }
 
-    private int getFreeCellIndexInCollumn(int collumn){
-        for(int i=0; i<3; i++){
-            if(table[i][collumn] == 0){
+    private int getFreeCellIndexInColumn(int column){
+        for(int i=0; i<boardSize; i++){
+            if(table[i][column] == 0){
                 return i;
             }
         }
@@ -279,7 +289,7 @@ public class TicTacToe {
         Alert alert = null;
         switch (checkTurn()){
             case 0:
-                if(clickCounter>=9){
+                if(clickCounter>=boardSize*boardSize){
                     alert = new Alert("Tie!");
                     win = true;
                 }
@@ -296,63 +306,64 @@ public class TicTacToe {
                 break;
         }
         if(alert != null){
-            playAgain(alert.getPlayAgain(), "singleplayer");
+            playAgain(alert.getPlayAgain());
         }
     }
 
-    private void checkMultiplayerWinner(){
-        Alert alert = null;
-        switch (checkTurn()){
-            case 0:
-                if(clickCounter>=9){
-                    alert = new Alert("Tie!");
-                }
-                break;
-            case 1:
-                alert = new Alert("Green wins!");
-                disableAllButtons();
-                break;
-            case 2:
-                alert = new Alert("Red wins!");
-                disableAllButtons();
-                break;
-        }
-        if(alert != null){
-            playAgain(alert.getPlayAgain(), "multiplayer");
-        }
-    }
+//    private void checkMultiplayerWinner(){
+//        Alert alert = null;
+//        switch (checkTurn()){
+//            case 0:
+//                if(clickCounter>=boardSize*boardSize){
+//                    alert = new Alert("Tie!");
+//                }
+//                break;
+//            case 1:
+//                alert = new Alert("Green wins!");
+//                disableAllButtons();
+//                break;
+//            case 2:
+//                alert = new Alert("Red wins!");
+//                disableAllButtons();
+//                break;
+//        }
+//        if(alert != null){
+//            playAgain(alert.getPlayAgain(), "multiplayer");
+//        }
+//    }
 
     private int checkTurn(){
         //check horizontally and vertically:
-        for(int i=0; i<3; i++){
+        for(int i=0; i<boardSize; i++){
             int rowSum = 0;
             int collSum = 0;
-            for(int j=0; j<3; j++){
+            for(int j=0; j<boardSize; j++){
                 rowSum += table[i][j];
                 collSum += table[j][i];
             }
-            if(rowSum == 3 || collSum == 3){
+            if(rowSum == boardSize || collSum == boardSize){
                 return 1;
             }
-            if(rowSum == 30 || collSum == 30){
+            if(rowSum == boardSize*10 || collSum == boardSize*10){
                 return 2;
             }
         }
         //check cross:
-        int crossL = table[0][0] + table[1][1] + table[2][2];
-        int crossR = table[0][2] + table[1][1] + table[2][0];
-        if(crossL == 3 || crossR == 3){
+        int[] crossSums = getCrossSums();
+        int crossL = crossSums[0];
+        int crossR = crossSums[1];
+        if(crossL == boardSize || crossR == boardSize){
             return 1;
         }
-        if(crossL == 30 || crossR == 30){
+        if(crossL == boardSize*10 || crossR == boardSize*10){
             return 2;
         }
         return 0;
     }
 
     private void disableAllButtons(){
-        for(int i=0; i<3; i++){
-            for(int j=0; j<3; j++){
+        for(int i=0; i<boardSize; i++){
+            for(int j=0; j<boardSize; j++){
                 buttons[i][j].setEnabled(false);
             }
         }
@@ -362,26 +373,38 @@ public class TicTacToe {
         this.frameReference = frameReference;
     }
 
-    private void playAgain(boolean playAgain, String gameMode){
+    private void playAgain(boolean playAgain){
         if(playAgain){
             this.frameReference.dispose();
-            setGame(gameMode);
+            setGame(boardSize);
         }
     }
 
-    public static void setGame(String gameMode){
+    public static void setGame(int boardSize){
         JFrame frame = new JFrame("TicTacToe");
-        TicTacToe game = new TicTacToe(gameMode);
+        TicTacToe game = new TicTacToe(boardSize);
         game.setFrameReference(frame);
         frame.setContentPane(game.panel1);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.pack();
-        frame.setSize(600,600);
+        frame.setSize(WINDOW_SIZE,WINDOW_SIZE);
         frame.setLocationRelativeTo(null);
         frame.setVisible(true);
     }
 
+    private void printTable(){
+        for(int i=0; i<boardSize; i++){
+            for(int j=0; j<boardSize; j++){
+                System.out.print(table[i][j] + " ");
+            }
+            System.out.println();
+        }
+        System.out.println();
+    }
+
     public static void main(String[] args) {
-        TicTacToe.setGame("singleplayer");
+        InputHandler input = new InputHandler();
+//        TicTacToe.setGame(3);
+        TicTacToe.setGame(input.getValue());
     }
 }
