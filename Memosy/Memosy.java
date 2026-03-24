@@ -14,20 +14,31 @@ public class Memosy {
     private int[][] values;
     private int selectedY = -1;
     private int selectedX;
+    private int clickCount = 0;
+    private int elapsedSeconds = 0;
+    private int guessedPairs = 0;
+    private int pairs;
 
     private Image[] icons;
 
     private JPanel mainPanel;
+
     private JButton[][] buttons;
+
+    private JLabel clickCounter;
+    private JLabel elapsedTimer;
 
     private ArrayList<Integer> tempList;
 
     private Timer timer;
+    private Timer globalTimer;
 
     public Memosy(){
         initIcons();
         initArrayList(4);
         initializeLayout(4);
+        setTimer();
+        startTimer();
     }
 
     private void initIcons(){
@@ -51,6 +62,7 @@ public class Memosy {
     private void initArrayList(int size){
         this.tempList = new ArrayList<>();
         int listSize = (size*size)/2;
+        pairs = listSize;
         for(int i=0; i<listSize; i++){
             for(int j=0; j<2; j++){
                 tempList.add(i);
@@ -63,6 +75,9 @@ public class Memosy {
         mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.PAGE_AXIS));
         buttons = new JButton[size][size];
         values = new int[size][size];
+
+        JPanel menuPanel = new JPanel();
+        JPanel cardsPanel = new JPanel();
 
         Random rand = new Random();
         for(int i=0; i<size; i++){
@@ -86,14 +101,31 @@ public class Memosy {
                     @Override
                     public void actionPerformed(ActionEvent e) {
                         buttons[y][x].setIcon(new ImageIcon(icons[values[y][x]]));
+                        updateClickCounter();
                         checkMatch(y, x);
+                        checkWin();
                     }
                 });
 
                 buttons[i][j] = button;
                 row.add(button);
             }
-            mainPanel.add(row);
+            cardsPanel.add(row);
+        }
+        clickCounter = new JLabel("Liczba kliknięć: 0");
+        menuPanel.add(clickCounter);
+        elapsedTimer = new JLabel("Czas: 0s");
+        menuPanel.add(elapsedTimer);
+        menuPanel.setMaximumSize(new Dimension(WINDOW_SIZE, 150));
+        cardsPanel.setMaximumSize(new Dimension(WINDOW_SIZE, 700));
+
+        mainPanel.add(menuPanel);
+        mainPanel.add(cardsPanel);
+    }
+
+    private void checkWin(){
+        if(guessedPairs == pairs){
+            stopTimer();
         }
     }
 
@@ -101,24 +133,21 @@ public class Memosy {
         if(selectedY == -1 || (selectedY == y && selectedX == x)){
             selectedY = y;
             selectedX = x;
-//            buttons[y][x].setEnabled(false);
             return;
         }
 
         if(values[selectedY][selectedX] == values[y][x]){
             buttons[selectedY][selectedX].setEnabled(false);
             buttons[y][x].setEnabled(false);
-            System.out.println("Correct!");
             selectedY = -1;
             selectedX = -1;
+            guessedPairs++;
         }else {
             ActionListener taskPerformer = new ActionListener() {
                 @Override
                 public void actionPerformed(ActionEvent e) {
-//                    buttons[selectedY][selectedX].setEnabled(true);
                     buttons[selectedY][selectedX].setIcon(null);
                     buttons[y][x].setIcon(null);
-                    System.out.println("Wrong!");
                     timer.stop();
                     selectedY = -1;
                     selectedX = -1;
@@ -131,12 +160,36 @@ public class Memosy {
         }
     }
 
+    private void updateClickCounter(){
+        clickCount++;
+        clickCounter.setText("Liczba kliknięć: "+clickCount);
+    }
+
+    private void setTimer(){
+        ActionListener update = new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                elapsedSeconds++;
+                elapsedTimer.setText("Czas: "+elapsedSeconds+"s");
+            }
+        };
+        globalTimer = new Timer(1000, update);
+    }
+
+    private void startTimer(){
+        globalTimer.start();
+    }
+
+    private void stopTimer(){
+        globalTimer.stop();
+    }
+
     public static void main(String[] args) {
         JFrame frame = new JFrame("Memosy");
         frame.setContentPane(new Memosy().mainPanel);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.pack();
-        frame.setSize(WINDOW_SIZE, WINDOW_SIZE);
+        frame.setSize(WINDOW_SIZE, WINDOW_SIZE+200);
         frame.setLocationRelativeTo(null);
         frame.setVisible(true);
         Memosy.frame = frame;
